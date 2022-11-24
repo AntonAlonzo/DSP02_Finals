@@ -7,7 +7,6 @@ clc;
 %% Reshape Audio into 2D Matrix
 % Host Audio
 [A_host,~] = audioread ('host.wav');
-[A_ahost,Ad] = dwt(A_host,'db3');
 lt = length (A_host);
 d = sqrt (lt);
 d = round(d);
@@ -54,9 +53,4 @@ U_host = (U_HLhost + U_LHhost)/2;
 V_host = (V_HLhost + V_LHhost)/2;
 
 M_host = U_host * S_host * V_host;
-F_host = reshape (M_host,(d*d),1);
-
-%% Apply IDWT to obatin watermarked audio
-AWout = idwt (Aa,F_host,'db3');
-
-audiowrite( 'AudioWatermarked.wav',AWout,fs);
+AWR = reshape (AW,(d*d),1);
