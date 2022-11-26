@@ -1,113 +1,89 @@
-% Audio-in-audio watermarking main program
+% Audio-in-audio watermark embedding program
 % ALONZO & SOLIS | CEDISP2 S11 | Group 3
 
 clear; clc;
 
+%% ========== EMBEDDING PROCESS ==========
+
 % Obtain audio data
 
-[Cover,Fs_c] = audioread('cover.wav');
-[Watermark,Fs_w] = audioread('watermark.wav');
+[Cover,Fs] = audioread('cover.wav');
+[Watermark,Fs] = audioread('watermark.wav');
+
+% Match the length of watermark with cover by padding zeros
+
+len_Cover = length(Cover);
+len_WM = length(Watermark);
+pad = zeros(len_Cover-len_WM, 1);
+Watermark = [Watermark; pad];
 
 % Perform single-level DWT with db3 wavelet
 
 [Cover_A,Cover_D] = dwt(Cover,'db3');
+[WM_A, WM_D] = dwt(Watermark, 'db3');
 
-% AI = idwt (Aa,Ad,'db3');
+% Reshape detail coeffs to be square matrices
 
-% Step 3 : svd decomposition Ad
-% Preparation before SVD process until become square matrix
-lt = length (Cover_D);
-d = sqrt (lt);
-d = round(d);
-Cover_D = Cover_D(1:d^2);
-Cover_A = Cover_A(1:d^2);
+dim = round(sqrt(length(Cover_D)));
+Cover_D = Cover_D(1:dim^2);
+Cover_A = Cover_A(1:dim^2);
 
-% Reshape matrix Ad until become square matrix 
-Adr = reshape(Cover_D,d,d);
+Cover_Dsq = reshape(Cover_D,dim,dim);
 
-[U_Ad,S_Ad,V_Ad] = svd (Adr);
+dim = round(sqrt(length(WM_D)));
+WM_D = WM_D(1:dim^2);
+WM_A = WM_A(1:dim^2);
 
+WM_Dsq = reshape(WM_D,dim,dim);
 
-%% Step 1a;watermark Audio file
+% Perform SVD on the respective coeffs of the two audio data
 
-[W,fs] = audioread ('watermark.wav');
+[U_CD, S_CD, V_CD] = svd (Cover_Dsq);
+[U_WD, S_WD, V_WD] = svd (WM_Dsq);
 
-%Equality dimention W and A
-la = length (A);
-lw = length (W);
+% Embedding watermark to cover via singular values
 
-tmbah0 = zeros((la-lw),1);
-W = [W ; tmbah0];
+S_Watermarked = S_CD + (0.01*S_WD);
 
-%% Step 2 a:  DWT Level 1 with wavelet db 3
+WatermarkedCover_D = U_CD * S_Watermarked * V_CD';
 
-[Wa,Wd] = dwt(W,'db3');
+WatermarkedCover_D = reshape (WatermarkedCover_D,dim^2,1);
 
-% AI = idwt (Aa,Ad,'db3');
+% IDWT to produce final watermarked audio
 
-%% svd decomposition Ad
-% Preparation before SVD process
-lt = length (Wd);
-d = sqrt (lt);
-d = round(d);
-Wd = Wd(1:d^2);
-Wa = Wa(1:d^2);
+WatermarkedCover_D = idwt (Cover_A, WatermarkedCover_D,'db3');
+audiowrite('watermarked.wav', WatermarkedCover_D, Fs);
 
-% Reshape matrix Ad until become square matrix
-Wdr = reshape(Wd,d,d);
+%% ========== EXTRACTING PROCESS ==========
 
-[U_Wd,S_Wd,V_Wd] = svd (Wdr);
+% Obtain watermarked audio data
+[WatermarkedAudio, Fs] = audioread('watermarked.wav');
 
+% Perform single-level DWT with db3 wavelet
 
+[WMA_A,WMA_D] = dwt(WatermarkedAudio, 'db3');
 
-%% Watermarking process
+% Reshape detail coeffs to be square matrices
 
-S_AW = S_Ad + (0.01*S_Wd);
+dim = round(sqrt(length(WMA_D)));
+WMA_A = WMA_A(1:dim^2);
+WMA_D = WMA_D(1:dim^2);
 
-AW = U_Ad * S_AW * V_Ad';
+WMA_Dsq = reshape(WMA_D,dim,dim);
 
-AWR = reshape (AW,(d*d),1);
+% Perform SVD on the coeffs
 
-%% invers IDWT to get output file
+[U_WMAD,S_WMAD,V_WMAD] = svd (WMA_Dsq);
 
-AWout = idwt (Cover_A,AWR,'db3');
+% Extract and reshape
 
-audiowrite( 'AudioWatermarked.wav',AWout,fs);
+S_Extract = (S_WMAD - S_CD)/0.01;
 
+Extract = U_WD * S_Extract * V_WD'; 
 
-%% ----------------------------------------------%%
+Extract = reshape (Extract,dim^2,1);
 
-%% Audio watermark extract process
+% IDWT to produce extracted watermark file
 
-[AWO,fs] = audioread ('AudioWatermarked.wav');
-
-%% DWT Level 1 with wavelet db 3
-
-[AWOa,AWOd] = dwt(AWO,'db3');
-
-% AI = idwt (Aa,Ad,'db3');
-
-%% svd decomposition Ad
-% Preparation before SVD process
-lt = length (AWOd);
-d = sqrt (lt);
-d = round(d);
-AWOd = AWOd(1:d^2);
-AWOa = AWOa(1:d^2);
-
-%% Reshape matrix Ad until become square matrix
-AWOdr = reshape(AWOd,d,d);
-%% SVD
-[U_AWOd,S_AWOd,V_AWOd] = svd (AWOdr);
-
-%% ekxtract
-S_Wd1 = (S_AWOd - S_Ad)/0.01;
-
-Wd1 = U_Wd * S_Wd1 * V_Wd'; 
-%% reshape
-Wd1R = reshape (Wd1,d^2,1);
-
-%% IDWT process
-
-W1out =  idwt (Wa,Wd1R,'db3');
-audiowrite( 'extractedWatermarked.wav',W1out,fs);
+Extract =  idwt (WM_A, Extract, 'db3');
+audiowrite('extracted.wav', Extract, Fs);
