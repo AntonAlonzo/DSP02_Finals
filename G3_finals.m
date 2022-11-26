@@ -86,4 +86,4 @@ Extract = reshape (Extract,dim^2,1);
 % IDWT to produce extracted watermark file
 
 Extract =  idwt (WM_A, Extract, 'db3');
-audiowrite('extracted.wav', Extract, Fs);
+audiowrite('extracted.wav', Extract(1:len_WM), Fs);

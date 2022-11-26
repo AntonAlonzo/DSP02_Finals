@@ -6,21 +6,21 @@ clc;
 
 %% Reshape Audio into 2D Matrix
 % Host Audio
-[A_host,~] = audioread ('host.wav');
+[A_host,~] = audioread ('cover.wav');
 [A_ahost,Ad] = dwt(A_host,'db3');
 lt = length (A_host);
 d = sqrt (lt);
 d = round(d);
-A_hostR = reshape(A_host,d,d);
+A_hostR = reshape(A_host,d,[]);
 
 % Watermark Audios
-[A_wat1,~] = audioread ('host.wav');
+[A_wat1,~] = audioread ('watermark1.wav');
 lt = length (A_wat1);
 d = sqrt (lt);
 d = round(d);
 A_wat1R = reshape(A_wat1,d,d);
 
-[A_wat2,~] = audioread ('host.wav');
+[A_wat2,~] = audioread ('watermark2.wav');
 lt = length (A_wat2);
 d = sqrt (lt);
 d = round(d);
