@@ -1,62 +1,113 @@
-% Driver Program
-% ALONZO & SOLIS | CEDISP3 S11 | GROUP 3
+% Audio-in-audio watermarking main program
+% ALONZO & SOLIS | CEDISP2 S11 | Group 3
 
-clear all;
-clc;
+clear; clc;
 
-%% Reshape Audio into 2D Matrix
-% Host Audio
-[A_host,~] = audioread ('host.wav');
-[A_ahost,Ad] = dwt(A_host,'db3');
-lt = length (A_host);
+% Obtain audio data
+
+[Cover,Fs_c] = audioread('cover.wav');
+[Watermark,Fs_w] = audioread('watermark.wav');
+
+% Perform single-level DWT with db3 wavelet
+
+[Cover_A,Cover_D] = dwt(Cover,'db3');
+
+% AI = idwt (Aa,Ad,'db3');
+
+% Step 3 : svd decomposition Ad
+% Preparation before SVD process until become square matrix
+lt = length (Cover_D);
 d = sqrt (lt);
 d = round(d);
-A_hostR = reshape(A_host,d,d);
+Cover_D = Cover_D(1:d^2);
+Cover_A = Cover_A(1:d^2);
 
-% Watermark Audios
-[A_wat1,~] = audioread ('host.wav');
-lt = length (A_wat1);
+% Reshape matrix Ad until become square matrix 
+Adr = reshape(Cover_D,d,d);
+
+[U_Ad,S_Ad,V_Ad] = svd (Adr);
+
+
+%% Step 1a;watermark Audio file
+
+[W,fs] = audioread ('watermark.wav');
+
+%Equality dimention W and A
+la = length (A);
+lw = length (W);
+
+tmbah0 = zeros((la-lw),1);
+W = [W ; tmbah0];
+
+%% Step 2 a:  DWT Level 1 with wavelet db 3
+
+[Wa,Wd] = dwt(W,'db3');
+
+% AI = idwt (Aa,Ad,'db3');
+
+%% svd decomposition Ad
+% Preparation before SVD process
+lt = length (Wd);
 d = sqrt (lt);
 d = round(d);
-A_wat1R = reshape(A_wat1,d,d);
+Wd = Wd(1:d^2);
+Wa = Wa(1:d^2);
 
-[A_wat2,~] = audioread ('host.wav');
-lt = length (A_wat2);
-d = sqrt (lt);
-d = round(d);
-A_wat2R = reshape(A_wat2,d,d);
+% Reshape matrix Ad until become square matrix
+Wdr = reshape(Wd,d,d);
 
-%% Host Audio Manipulation
-% 2-level Haar Wavelet Transform on Host Audio (not sure??)
-[LLhost, ~, ~, ~] = dwt2(im2double(A_hostR), 'haar');
-[LLhost, LHhost, HLhost, HHhost] = dwt2(im2double(LLhost), 'haar');
+[U_Wd,S_Wd,V_Wd] = svd (Wdr);
 
-% SVD on HL and LH bands
-[U_HLhost,S_HLhost,V_HLhost] = svd(HLhost);
-[U_LHhost,S_LHhost,V_LHhost] = svd(LHhost);
 
-%% Watermark Audio Manipulation
-[LLwat1, LHwat1, HLwat1, HHwat1] = dwt2(im2double(A_wat1R), 'haar');
-[LLwat2, LHwat2, HLwat2, HHwat2] = dwt2(im2double(A_wat2R), 'haar');
 
-[U_wat1,S_wat1,V_wat1] = svd(HLwat1);
-[U_wat2,S_wat2,V_wat2] = svd(LHwat2);
+%% Watermarking process
 
-%% Modify singular values of host image
+S_AW = S_Ad + (0.01*S_Wd);
 
-S_hostHL = S_HLhost + (0.01*S_wat1);
-S_hostLH = S_LHhost + (0.01*S_wat2);
+AW = U_Ad * S_AW * V_Ad';
 
-S_host = (S_hostHL + S_hostLH)/2;
+AWR = reshape (AW,(d*d),1);
 
-%% Obtain modified audio
-U_host = (U_HLhost + U_LHhost)/2;
-V_host = (V_HLhost + V_LHhost)/2;
+%% invers IDWT to get output file
 
-M_host = U_host * S_host * V_host;
-F_host = reshape (M_host,(d*d),1);
-
-%% Apply IDWT to obatin watermarked audio
-AWout = idwt (Aa,F_host,'db3');
+AWout = idwt (Cover_A,AWR,'db3');
 
 audiowrite( 'AudioWatermarked.wav',AWout,fs);
+
+
+%% ----------------------------------------------%%
+
+%% Audio watermark extract process
+
+[AWO,fs] = audioread ('AudioWatermarked.wav');
+
+%% DWT Level 1 with wavelet db 3
+
+[AWOa,AWOd] = dwt(AWO,'db3');
+
+% AI = idwt (Aa,Ad,'db3');
+
+%% svd decomposition Ad
+% Preparation before SVD process
+lt = length (AWOd);
+d = sqrt (lt);
+d = round(d);
+AWOd = AWOd(1:d^2);
+AWOa = AWOa(1:d^2);
+
+%% Reshape matrix Ad until become square matrix
+AWOdr = reshape(AWOd,d,d);
+%% SVD
+[U_AWOd,S_AWOd,V_AWOd] = svd (AWOdr);
+
+%% ekxtract
+S_Wd1 = (S_AWOd - S_Ad)/0.01;
+
+Wd1 = U_Wd * S_Wd1 * V_Wd'; 
+%% reshape
+Wd1R = reshape (Wd1,d^2,1);
+
+%% IDWT process
+
+W1out =  idwt (Wa,Wd1R,'db3');
+audiowrite( 'extractedWatermarked.wav',W1out,fs);
