@@ -14,6 +14,6 @@ PSNR = 20*log10(R/RMSE);
 
 % calculating (normalized) correlation coefficient
 
-NC = sum(orig2.*exp2)/sqrt(sum(orig2)*sum(exp2));
+NC = ((1/N)*sum(orig2.*exp2))/((1/N)*sqrt(sum(orig2.^2)*sum(exp2.^2)));
 
 end
