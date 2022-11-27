@@ -163,6 +163,14 @@ title('watermark from lowpass attack attack');
 
 %% ========== ERROR COMPUTATION ==========
 
+% Calculate the ff:
+% - Difference between original cover and the watermarked cover
+% - Correlation between original and extracted watermark
+
+% [coverDiff,wmDiff] = difference(Cover,Watermark,WatermarkedCover,Extracted);
+% fprintf('PSNR of Cover vs Watermarked = %f\n', coverDiff);
+% fprintf('NCC of Watermark vs Extract = %f\n\n', wmDiff);
+
 % Calculating the ff:
 % - PSNR between original watermarked and attacked watermarked audio
 % - Correlation between original and attacked extracted watermark
