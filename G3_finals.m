@@ -62,7 +62,7 @@ audiowrite('extracted.wav', Extracted(1:len_WM), Fs);
 len_WMC = length(WatermarkedCover);
 
 % Reverb
-reverb = reverberator;
+reverb = reverberator('HighCutFrequency',5);
 revAttack = reverb(WatermarkedCover);
 revAttack = revAttack(:,1) + revAttack(:,2);
 audiowrite('reverb.wav', revAttack, Fs);
