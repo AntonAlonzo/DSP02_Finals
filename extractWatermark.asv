@@ -24,4 +24,3 @@ function Extracted = extractWatermark(WatermarkedAudio, S_CA, U_WA, V_WA, WM_D, 
     
     % IDWT to produce extracted watermark file
     Extracted = idwt (Extract_A, WM_D,'db3');
-    Extracted = Extracted(1:len_WM);

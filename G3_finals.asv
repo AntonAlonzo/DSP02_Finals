@@ -172,16 +172,10 @@ title('watermark from lowpass attack attack');
 [PSNR_h, NC_h] = difference(WatermarkedCover,Extracted,highAttack,highpass_Extract);
 [PSNR_l, NC_l] = difference(WatermarkedCover,Extracted,lowAttack,lowpass_Extract);
 
-disp('PSNR between Original and Attacked Watermarked Audio');
-fprintf('Reverb = %f\n', PSNR_r);
-fprintf('Gaussian white noise = %f\n', PSNR_g);
-fprintf('Highpass filtering = %f\n', PSNR_h);
-fprintf('Lowpass filtering = %f\n\n', PSNR_l);
-
-disp('Correlation Coefficient between Original and Attacked Extracted Watermark')
-fprintf('Reverb = %f\n', NC_r);
-fprintf('Gaussian white noise = %f\n', NC_g);
-fprintf('Highpass filtering = %f\n', NC_h);
-fprintf('Lowpass filtering = %f\n', NC_l);
+disp('PSNR between original watermarked and ff. attacked watermarked audio');
+disp('Reverb = ', PSNR_r);
+disp('Gaussian white noise = ', PSNR_g);
+disp('Highpass filtering = ', PSNR_h);
+disp)(
 
 
