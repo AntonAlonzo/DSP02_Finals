@@ -51,7 +51,7 @@ WatermarkedCover_A = reshape (WatermarkedCover_A,dim^2,1);
 
 % IDWT to produce final watermarked audio
 
-WatermarkedCover_A = idwt (Cover_A, WatermarkedCover_A,'db3');
+WatermarkedCover_A = idwt (WatermarkedCover_A, Cover_D,'db3');
 audiowrite('watermarked.wav', WatermarkedCover_A, Fs);
 
 disp('embedding done')
@@ -87,7 +87,7 @@ Extract = reshape (Extract,dim^2,1);
 
 % IDWT to produce extracted watermark file
 
-Extract =  idwt (WM_A, Extract, 'db3');
+Extract =  idwt (Extract, WM_D, 'db3');
 audiowrite('extracted.wav', Extract(1:len_WM), Fs);
 
 disp('extracting done')
@@ -110,7 +110,7 @@ audiowrite('gaussian.wav', gaussianAttack, Fs);
 
 disp('highpass attack')
 % Highpass filter
-highAttack = highpass(WatermarkedCover,50,Fs);
+highAttack = highpass(WatermarkedCover,3,Fs);
 audiowrite('highpass.wav', highAttack, Fs);
 
 disp('lowpass attack')
@@ -183,16 +183,16 @@ lowpass_Extract = reshape (lowpass_Extract,dim^2,1);
 
 disp('idwt')
 % IDWT to produce extracted watermark file
-reverb_Extract =  idwt (WM_A, reverb_Extract, 'db3');
+reverb_Extract =  idwt (reverb_Extract, WM_D, 'db3');
 audiowrite('extractedReverb.wav', reverb_Extract(1:len_WM), Fs);
 
-gaussian_Extract =  idwt (WM_A, gaussian_Extract, 'db3');
+gaussian_Extract =  idwt (gaussian_Extract, WM_D, 'db3');
 audiowrite('extractedGaussian.wav', gaussian_Extract(1:len_WM), Fs);
 
-highpass_Extract =  idwt (WM_A, highpass_Extract, 'db3');
+highpass_Extract =  idwt (highpass_Extract, WM_D, 'db3');
 audiowrite('extractedHighpass.wav', highpass_Extract(1:len_WM), Fs);
 
-lowpass_Extract =  idwt (WM_A, lowpass_Extract, 'db3');
+lowpass_Extract =  idwt (lowpass_Extract, WM_D, 'db3');
 audiowrite('extractedLowpass.wav', lowpass_Extract(1:len_WM), Fs);
 
 %% ========== PLOTTING ==========
