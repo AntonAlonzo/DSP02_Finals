@@ -24,42 +24,40 @@ Watermark = [Watermark; pad];
 
 % Reshape detail coeffs to be square matrices
 
-dim = round(sqrt(length(Cover_A)));
+dim = round(sqrt(length(Cover_D)));
 Cover_D = Cover_D(1:dim^2);
 Cover_A = Cover_A(1:dim^2);
 
-Cover_Asq = reshape(Cover_A,dim,dim);
+Cover_Dsq = reshape(Cover_D,dim,dim);
 
-dim = round(sqrt(length(WM_A)));
+dim = round(sqrt(length(WM_D)));
 WM_D = WM_D(1:dim^2);
 WM_A = WM_A(1:dim^2);
 
-WM_Asq = reshape(WM_A,dim,dim);
+WM_Dsq = reshape(WM_D,dim,dim);
 
 % Perform SVD on the respective coeffs of the two audio data
 
-[U_CA, S_CA, V_CA] = svd (Cover_Asq);
-[U_WA, S_WA, V_WA] = svd (WM_Asq);
+[U_CD, S_CD, V_CD] = svd (Cover_Dsq);
+[U_WD, S_WD, V_WD] = svd (WM_Dsq);
 
 % Embedding watermark to cover via singular values
 
-S_Watermarked = S_CA + (0.01*S_WA);
+S_Watermarked = S_CD + (0.01*S_WD);
 
-WatermarkedCover_A = U_CA * S_Watermarked * V_CA';
+WatermarkedCover_D = U_CD * S_Watermarked * V_CD';
 
-WatermarkedCover_A = reshape (WatermarkedCover_A,dim^2,1);
+WatermarkedCover_D = reshape (WatermarkedCover_D,dim^2,1);
 
 % IDWT to produce final watermarked audio
 
-WatermarkedCover_A = idwt (WatermarkedCover_A, Cover_D,'db3');
-audiowrite('watermarked.wav', WatermarkedCover_A, Fs);
-
-disp('embedding done')
+WatermarkedCover = idwt (Cover_A, WatermarkedCover_D,'db3');
+audiowrite('watermarked.wav', WatermarkedCover, Fs);
 
 %% ========== EXTRACTING PROCESS ==========
 
 % Obtain watermarked audio data
-[WatermarkedAudio, Fs] = audioread('watermarked.wav');
+[WatermarkedAudio, ~] = audioread('watermarked.wav');
 
 % Perform single-level DWT with db3 wavelet
 
@@ -67,25 +65,25 @@ disp('embedding done')
 
 % Reshape detail coeffs to be square matrices
 
-dim = round(sqrt(length(WMA_A)));
+dim = round(sqrt(length(WMA_D)));
 WMA_A = WMA_A(1:dim^2);
 WMA_D = WMA_D(1:dim^2);
 
-WMA_Asq = reshape(WMA_A,dim,dim);
+WMA_Dsq = reshape(WMA_D,dim,dim);
 
 % Perform SVD on the coeffs
 
-[U_WMAA,S_WMAA,V_WMAA] = svd (WMA_Asq);
+[U_WMAD,S_WMAD,V_WMAD] = svd (WMA_Dsq);
 
 % Extract and reshape
 
-S_Extract = (S_WMAA - S_CA)/0.01;
+S_Extract = (S_WMAD - S_CD)/0.01;
 
-Extract = U_WA * S_Extract * V_WA'; 
+Extract_D = U_WD * S_Extract * V_WD'; 
 
-Extract = reshape (Extract,dim^2,1);
+Extract_D = reshape (Extract_D,dim^2,1);
 
 % IDWT to produce extracted watermark file
 
-Extract =  idwt (WM_A, Extract, 'db3');
-audiowrite('extracted.wav', Extract, Fs);
+Extracted = idwt (WM_A, Extract_D,'db3');
+audiowrite('extracted.wav', Extracted(1:len_WM), Fs);
