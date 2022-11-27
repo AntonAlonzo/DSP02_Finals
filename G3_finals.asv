@@ -22,12 +22,13 @@ paddedWatermark = [Watermark; pad];
 % Reshape detail coeffs to be square matrices
 dim = round(sqrt(length(Cover_D)));
 Cover_D = Cover_D(1:dim^2);
-Cover_A = Cover_A(1:dim^2);
+
 Cover_Dsq = reshape(Cover_D,dim,dim);
 
 dim = round(sqrt(length(WM_D)));
 WM_D = WM_D(1:dim^2);
 WM_A = WM_A(1:dim^2);
+
 WM_Dsq = reshape(WM_D,dim,dim);
 
 % Perform SVD on the respective coeffs of the two audio data
