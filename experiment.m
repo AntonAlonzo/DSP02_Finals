@@ -11,7 +11,7 @@ clc;
 lt = length (A_host);
 d = sqrt (lt);
 d = round(d);
-A_hostR = reshape(A_host,d,[]);
+A_hostR = reshape(A_host,d,d);
 
 % Watermark Audios
 [A_wat1,~] = audioread ('watermark1.wav');
