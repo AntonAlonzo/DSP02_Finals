@@ -6,7 +6,7 @@ function Extracted = extractWatermark(WatermarkedAudio, S_CA, U_WA, V_WA, WM_D, 
     % Perform single-level DWT with db3 wavelet
     [A,~] = dwt(WatermarkedAudio, 'db4');
     
-    % Reshape detail coeffs to be square matrices
+    % Reshape approx coeffs to be square matrices
     dim = round(sqrt(length(A)));
     A = A(1:dim^2);
     
