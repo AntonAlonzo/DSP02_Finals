@@ -1,7 +1,7 @@
 % Function for calculating the PSNR and NCC between two signals
 % ALONZO & SOLIS | CEDISP2 S11 | Group 3
 
-function [PSNR, NCC] = difference(orig1,orig2,exp1,exp2)
+function [RMSE, PSNR, NCC] = difference(orig1,orig2,exp1,exp2)
 
 % match lengths only if uneven
 if length(orig1) > length(exp1)

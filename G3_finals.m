@@ -61,7 +61,7 @@ audiowrite('extracted.wav', Extracted, Fs_w);
 len_WMA = length(WatermarkedAudio);
 
 % Reverb
-reverb = reverberator('HighCutFrequency',5);
+reverb = reverberator('HighCutFrequency',500,'SampleRate',1000);
 revAttack = reverb(WatermarkedAudio);
 revAttack = revAttack(:,1) + revAttack(:,2);
 audiowrite('reverb.wav', revAttack, Fs_wc);
@@ -92,6 +92,10 @@ gaussian_Extract = extractWatermark(gaussianAttack, S_CA, U_WA, V_WA, WM_A, len_
 highpass_Extract = extractWatermark(highAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
 lowpass_Extract = extractWatermark(lowAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
 
+% Adjust amplitudes
+reverb_Extract = reverb_Extract./100;
+lowpass_Extract = lowpass_Extract./20;
+
 % Write wav files
 audiowrite('extractedReverb.wav', reverb_Extract, Fs_w);
 audiowrite('extractedGaussian.wav', gaussian_Extract, Fs_w);
@@ -104,19 +108,19 @@ audiowrite('extractedLowpass.wav', lowpass_Extract, Fs_w);
 figure
 subplot(4,1,1), 
 plot(1:len_Cover, Cover),
-title('cover signal');
+title('Cover Signal');
 
 subplot(4,1,2), 
 plot(1:len_WM, Watermark),
-title('watermark signal');
+title('Watermark Signal');
 
 subplot(4,1,3), 
 plot(1:len_WMA, WatermarkedCover),
-title('watermarked cover signal');
+title('Watermarked Cover Signal');
 
 subplot(4,1,4), 
 plot(1:len_WM, Extracted),
-title('extracted watermark');
+title('Extracted Watermark');
 
 % FIGURE 2: Original watermarked signals vs. attacked watermarked signals
 figure
@@ -168,18 +172,25 @@ title('Watermark from Lowpass Filter Attack');
 % - Difference between original cover and the watermarked cover
 % - Correlation between original and extracted watermark
 
-[coverDiff,wmDiff] = difference(Cover,Watermark,WatermarkedCover,Extracted);
-fprintf('PSNR of Cover vs Watermarked = %f\n', coverDiff);
+[coverDiff1, coverDiff2, wmDiff] = difference(Cover,Watermark,WatermarkedCover,Extracted);
+fprintf('RMSE of Cover vs Watermarked = %f\n', coverDiff1);
+fprintf('PSNR of Cover vs Watermarked = %f\n', coverDiff2);
 fprintf('NCC of Watermark vs Extract = %f\n\n', wmDiff);
 
 % Calculating the ff:
 % - PSNR between original watermarked and attacked watermarked audio
 % - Correlation between original and attacked extracted watermark
 
-[PSNR_r, NC_r] = difference(WatermarkedCover,Extracted,revAttack,reverb_Extract);
-[PSNR_g, NC_g] = difference(WatermarkedCover,Extracted,gaussianAttack,gaussian_Extract);
-[PSNR_h, NC_h] = difference(WatermarkedCover,Extracted,highAttack,highpass_Extract);
-[PSNR_l, NC_l] = difference(WatermarkedCover,Extracted,lowAttack,lowpass_Extract);
+[RMSE_r, PSNR_r, NC_r] = difference(WatermarkedCover,Extracted,revAttack,reverb_Extract);
+[RMSE_g, PSNR_g, NC_g] = difference(WatermarkedCover,Extracted,gaussianAttack,gaussian_Extract);
+[RMSE_h, PSNR_h, NC_h] = difference(WatermarkedCover,Extracted,highAttack,highpass_Extract);
+[RMSE_l, PSNR_l, NC_l] = difference(WatermarkedCover,Extracted,lowAttack,lowpass_Extract);
+
+disp('RMSE between Original and Attacked Watermarked Audio');
+fprintf('Reverb               = %f\n', RMSE_r);
+fprintf('Gaussian white noise = %f\n', RMSE_g);
+fprintf('Highpass filtering   = %f\n', RMSE_h);
+fprintf('Lowpass filtering    = %f\n\n', RMSE_l);
 
 disp('PSNR between Original and Attacked Watermarked Audio');
 fprintf('Reverb               = %f\n', PSNR_r);
