@@ -160,11 +160,11 @@ title('Extracted from Gaussian White Noise attack');
 
 subplot(5,1,4), 
 plot(1:len_WM, highpass_Extract),
-title('Watermark from Highpass Filter Attack');
+title('Extracted from Highpass Filter Attack');
 
 subplot(5,1,5), 
 plot(1:len_WM, lowpass_Extract),
-title('Watermark from Lowpass Filter Attack');
+title('Extracted from Lowpass Filter Attack');
 
 %% ========== ERROR COMPUTATION ==========
 
@@ -181,10 +181,10 @@ fprintf('NCC of Watermark vs Extract = %f\n\n', wmDiff);
 % - PSNR between original watermarked and attacked watermarked audio
 % - Correlation between original and attacked extracted watermark
 
-[RMSE_r, PSNR_r, NC_r] = difference(WatermarkedCover,Extracted,revAttack,reverb_Extract);
-[RMSE_g, PSNR_g, NC_g] = difference(WatermarkedCover,Extracted,gaussianAttack,gaussian_Extract);
-[RMSE_h, PSNR_h, NC_h] = difference(WatermarkedCover,Extracted,highAttack,highpass_Extract);
-[RMSE_l, PSNR_l, NC_l] = difference(WatermarkedCover,Extracted,lowAttack,lowpass_Extract);
+[RMSE_r, PSNR_r, NC_r] = difference(WatermarkedCover,Watermark,revAttack,reverb_Extract);
+[RMSE_g, PSNR_g, NC_g] = difference(WatermarkedCover,Watermark,gaussianAttack,gaussian_Extract);
+[RMSE_h, PSNR_h, NC_h] = difference(WatermarkedCover,Watermark,highAttack,highpass_Extract);
+[RMSE_l, PSNR_l, NC_l] = difference(WatermarkedCover,Watermark,lowAttack,lowpass_Extract);
 
 disp('RMSE between Original and Attacked Watermarked Audio');
 fprintf('Reverb               = %f\n', RMSE_r);
