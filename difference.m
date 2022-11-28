@@ -1,7 +1,12 @@
-% Calculate the PSNR between two signals
+% Function for calculating the PSNR and NCC between two signals
 % ALONZO & SOLIS | CEDISP2 S11 | Group 3
 
-function [PSNR, NC] = difference(orig1,orig2,exp1,exp2)
+function [PSNR, NCC] = difference(orig1,orig2,exp1,exp2)
+
+% match lengths only if uneven
+if length(orig1) > length(exp1)
+    orig1 = orig1(1:length(exp1));
+end
 
 % calculating PSNR between two signals
 
@@ -14,6 +19,6 @@ PSNR = 20*log10(R/RMSE);
 
 % calculating (normalized) correlation coefficient
 
-NC = ((1/N)*sum(orig2.*exp2))/((1/N)*sqrt(sum(orig2.^2)*sum(exp2.^2)));
+NCC = ((1/N)*sum(orig2.*exp2))/((1/N)*sqrt(sum(orig2.^2)*sum(exp2.^2)));
 
 end

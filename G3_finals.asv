@@ -19,7 +19,7 @@ paddedWatermark = [Watermark; pad];
 [Cover_A,Cover_D] = dwt(Cover,'db4');
 [WM_A, WM_D] = dwt(paddedWatermark, 'db4');
 
-% Reshape approx coeffs to be square matrices
+% Reshape detail coeffs to be square matrices
 dim = round(sqrt(length(Cover_A)));
 Cover_D = Cover_D(1:dim^2);
 Cover_A = Cover_A(1:dim^2);
@@ -144,23 +144,23 @@ title('Lowpass Filter Attack');
 figure
 subplot(5,1,1), 
 plot(1:len_WM, Watermark),
-title('Original Extracted Watermark');
+title('watermark signal');
 
 subplot(5,1,2), 
 plot(1:len_WM, reverb_Extract),
-title('Extracted from Reverb Attack');
+title('watermark from reverb attack');
 
 subplot(5,1,3), 
 plot(1:len_WM, gaussian_Extract),
-title('Extracted from Gaussian White Noise attack');
+title('watermark from gaussian white noise attack');
 
 subplot(5,1,4), 
 plot(1:len_WM, highpass_Extract),
-title('Watermark from Highpass Filter Attack');
+title('watermark from highpass filter attack');
 
 subplot(5,1,5), 
 plot(1:len_WM, lowpass_Extract),
-title('Watermark from Lowpass Filter Attack');
+title('watermark from lowpass filter attack');
 
 %% ========== ERROR COMPUTATION ==========
 
@@ -185,10 +185,10 @@ disp('PSNR between Original and Attacked Watermarked Audio');
 fprintf('Reverb               = %f\n', PSNR_r);
 fprintf('Gaussian white noise = %f\n', PSNR_g);
 fprintf('Highpass filtering   = %f\n', PSNR_h);
-fprintf('Lowpass filtering    = %f\n\n', PSNR_l);
+fprintf('Lowpass filtering = %f\n\n', PSNR_l);
 
 disp('Correlation Coefficient between Original and Attacked Extracted Watermark')
-fprintf('Reverb               = %f\n', NC_r);
+fprintf('Reverb = %f\n', NC_r);
 fprintf('Gaussian white noise = %f\n', NC_g);
-fprintf('Highpass filtering   = %f\n', NC_h);
-fprintf('Lowpass filtering    = %f\n', NC_l);
+fprintf('Highpass filtering = %f\n', NC_h);
+fprintf('Lowpass filtering = %f\n', NC_l);
