@@ -7,7 +7,7 @@ clear; clc;
 
 % Obtain audio data
 [Cover,Fs_c] = audioread('cover.wav');
-[Watermark,Fs_w] = audioread('watermark.wav');
+[Watermark,Fs_w] = audioread('watermark2.wav');
 
 % Match the length of watermark with cover by padding zeros
 len_Cover = length(Cover);
@@ -20,31 +20,31 @@ paddedWatermark = [Watermark; pad];
 [WM_A, WM_D] = dwt(paddedWatermark, 'db4');
 
 % Reshape approx coeffs to be square matrices
-dim = round(sqrt(length(Cover_A)));
+dim = round(sqrt(length(Cover_D)));
 Cover_D = Cover_D(1:dim^2);
 Cover_A = Cover_A(1:dim^2);
 
-Cover_Asq = reshape(Cover_A,dim,dim);
+Cover_Dsq = reshape(Cover_D,dim,dim);
 
 dim = round(sqrt(length(WM_A)));
 WM_D = WM_D(1:dim^2);
 WM_A = WM_A(1:dim^2);
 
-WM_Asq = reshape(WM_A,dim,dim);
+WM_Dsq = reshape(WM_A,dim,dim);
 
 % Perform SVD on the respective coeffs of the two audio data
-[U_CA, S_CA, V_CA] = svd(Cover_Asq);
-[U_WA, S_WA, V_WA] = svd(WM_Asq);
+[U_CD, S_CD, V_CD] = svd(Cover_Dsq);
+[U_WD, S_WD, V_WD] = svd(WM_Dsq);
 
 % Embedding watermark to cover via singular values
-S_Watermarked = S_CA + (0.01*S_WA);
+S_Watermarked = S_CD + (0.01*S_WD);
 
-WatermarkedCover_A = U_CA * S_Watermarked * V_CA';
+WatermarkedCover_D = U_CD * S_Watermarked * V_CD';
 
-WatermarkedCover_A = reshape(WatermarkedCover_A, dim^2, 1);
+WatermarkedCover_D = reshape(WatermarkedCover_D, dim^2, 1);
 
 % IDWT to produce final watermarked audio
-WatermarkedCover = idwt(WatermarkedCover_A,Cover_D,'db4');
+WatermarkedCover = idwt(Cover_A,WatermarkedCover_D,'db4');
 audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 
 %% ========== EXTRACTING PROCESS ==========
@@ -52,7 +52,7 @@ audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 % Obtain watermarked audio data
 [WatermarkedAudio, Fs_wc] = audioread('watermarked.wav');
 
-Extracted = extractWatermark(WatermarkedAudio, S_CA, U_WA, V_WA, WM_D, len_WM);
+Extracted = extractWatermarkD(WatermarkedAudio, S_CD, U_WD, V_WD, WM_A, len_WM);
 
 audiowrite('extracted.wav', Extracted, Fs_w);
 
@@ -75,17 +75,10 @@ audiowrite('gaussian.wav', gaussianAttack, Fs_wc);
 % Obtain attacked watermarked audio data
 [revAttack, ~] = audioread('reverb.wav');
 [gaussianAttack, ~] = audioread('gaussian.wav');
-[highAttack, ~] = audioread('highpass.wav');
-[lowAttack, ~] = audioread('lowpass.wav');
 
 % Extract watermarks
-reverb_Extract = extractWatermark(revAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-gaussian_Extract = extractWatermark(gaussianAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-highpass_Extract = extractWatermark(highAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-lowpass_Extract = extractWatermark(lowAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-
-% Adjust amplitudes
-reverb_Extract = reverb_Extract./100;
+reverb_Extract = extractWatermarkD(revAttack, S_CD, U_WD, V_WD, WM_A, len_WM);
+gaussian_Extract = extractWatermarkD(gaussianAttack, S_CD, U_WD, V_WD, WM_A, len_WM);
 
 % Write wav files
 audiowrite('extractedReverb.wav', reverb_Extract, Fs_w);
