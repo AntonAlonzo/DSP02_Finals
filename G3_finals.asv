@@ -7,63 +7,65 @@ clear; clc;
 
 % Obtain audio data
 [Cover,Fs_c] = audioread('cover.wav');
-[Watermark,Fs_w] = audioread('watermark.wav');
-
-[Watermark1,Fs_w] = audioread('watermark1.wav');
+[Watermark1,Fs_w1] = audioread('watermark.wav');
+[Watermark2,Fs_w2] = audioread('watermark1.wav');
 
 % Match the length of watermark with cover by padding zeros
 len_Cover = length(Cover);
-len_WM = length(Watermark);
-pad = zeros(len_Cover-len_WM, 1);
-paddedWatermark = [Watermark; pad];
-
-len_WM = length(Watermark1);
-pad = zeros(len_Cover-len_WM, 1);
+len_WM1 = length(Watermark1);
+pad = zeros(len_Cover-len_WM1, 1);
 paddedWatermark1 = [Watermark1; pad];
+
+len_WM2 = length(Watermark2);
+pad = zeros(len_Cover-len_WM2, 1);
+paddedWatermark2 = [Watermark2; pad];
 
 % Perform single-level DWT with db4 wavelet
 [Cover_A,Cover_D] = dwt(Cover,'db4');
-[WM_A, WM_D] = dwt(paddedWatermark, 'db4');
-
-[WM_A1, WM_D1] = dwt(paddedWatermark1, 'db4');
+[WM1_A, WM1_D] = dwt(paddedWatermark1, 'db4');
+[WM2_A, WM2_D] = dwt(paddedWatermark2, 'db4');
 
 %% ========== EMBEDDING PROCESS ==========
 
-% Reshape approx coeffs to be square matrices
+% Reshape coeffs to be square matrices
 dim = round(sqrt(length(Cover_A)));
-Cover_D = Cover_D(1:dim^2);
 Cover_A = Cover_A(1:dim^2);
-
 Cover_Asq = reshape(Cover_A,dim,dim);
 
-dim = round(sqrt(length(WM_A)));
-WM_D = WM_D(1:dim^2);
-WM_A = WM_A(1:dim^2);
+dim = round(sqrt(length(Cover_D)));
+Cover_D = Cover_D(1:dim^2);
+Cover_Dsq = reshape(Cover_D,dim,dim);
 
-WM_Asq = reshape(WM_A,dim,dim);
+dim = round(sqrt(length(WM1_A)));
+WM1_A = WM1_A(1:dim^2);
+WM1_D = WM1_D(1:dim^2);
+WM1_Asq = reshape(WM1_A,dim,dim);
 
+dim = round(sqrt(length(WM2_D)));
+WM2_A = WM2_A(1:dim^2);
+WM2_D = WM2_D(1:dim^2);
+WM2_Dsq = reshape(WM2_D,dim,dim);
 
-dim = round(sqrt(length(WM_D1)));
-WM_D1 = WM_D1(1:dim^2);
-WM_A1 = WM_A1(1:dim^2);
-
-WM_Dsq1 = reshape(WM_A,dim,dim);
-
-% Perform SVD on the respective coeffs of the two audio data
+% Perform SVD on the coeffs of the audio data
 [U_CA, S_CA, V_CA] = svd(Cover_Asq);
-[U_WA, S_WA, V_WA] = svd(WM_Asq);
-
-[U_WA1, S_WA1, V_WA1] = svd(WM_Dsq1);
+[U_WA, S_WA, V_WA] = svd(WM1_Asq);
+[U_CD, S_CD, V_CD] = svd(Cover_Dsq);
+[U_WD, S_WD, V_WD] = svd(WM2_Dsq);
 
 % Embedding watermark to cover via singular values
+
+% Watermark 1 to approx coeffs
 S_Watermarked = S_CA + (0.01*S_WA);
-
 WatermarkedCover_A = U_CA * S_Watermarked * V_CA';
-
 WatermarkedCover_A = reshape(WatermarkedCover_A, dim^2, 1);
 
+% Watermark 2 to detail coeffs
+S_Watermarked = S_CD + (0.01*S_WD);
+WatermarkedCover_D = U_CD * S_Watermarked * V_CD';
+WatermarkedCover_D = reshape(WatermarkedCover_D, dim^2, 1);
+
 % IDWT to produce final watermarked audio
-WatermarkedCover = idwt(WatermarkedCover_A,Cover_D,'db4');
+WatermarkedCover = idwt(WatermarkedCover_A,WatermarkedCover_D,'db4');
 audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 
 %% ========== EXTRACTING PROCESS ==========
@@ -71,9 +73,12 @@ audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 % Obtain watermarked audio data
 [WatermarkedAudio, Fs_wc] = audioread('watermarked.wav');
 
-Extracted = extractWatermark(WatermarkedAudio, S_CA, U_WA, V_WA, WM_D, len_WM);
+% Call extraction function
+[Extracted1,Extracted2] = extractWatermark(WatermarkedAudio,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
 
-audiowrite('extracted.wav', Extracted, Fs_w);
+% Write extracted watermark files
+audiowrite('extracted1.wav', Extracted1, Fs_w1);
+audiowrite('extracted2.wav', Extracted2, Fs_w2);
 
 %% ========== ATTACKING PROCESS ==========
 
@@ -106,40 +111,57 @@ audiowrite('lowpass.wav', lowAttack, Fs_wc);
 [lowAttack, ~] = audioread('lowpass.wav');
 
 % Extract watermarks
-reverb_Extract = extractWatermark(revAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-gaussian_Extract = extractWatermark(gaussianAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-highpass_Extract = extractWatermark(highAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
-lowpass_Extract = extractWatermark(lowAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
+[r_Ex1,r_Ex2] = extractWatermark(revAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
+[g_Ex1,g_Ex2] = extractWatermark(gaussianAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
+[h_Ex1,h_Ex2] = extractWatermark(highAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
+[l_Ex1,l_Ex2] = extractWatermark(lowAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
 
 % Adjust amplitudes
-reverb_Extract = reverb_Extract./80;
-lowpass_Extract = lowpass_Extract./20;
+r_Ex1 = r_Ex1./80;
+r_Ex2 = r_Ex2./80;
+h_Ex2 = h_Ex2./20;
+l_Ex1 = l_Ex1./20;
 
 % Write wav files
-audiowrite('extractedReverb.wav', reverb_Extract, Fs_w);
-audiowrite('extractedGaussian.wav', gaussian_Extract, Fs_w);
-audiowrite('extractedHighpass.wav', highpass_Extract, Fs_w);
-audiowrite('extractedLowpass.wav', lowpass_Extract, Fs_w);
+audiowrite('extractedReverb_1.wav', r_Ex1, Fs_w1);
+audiowrite('extractedReverb_2.wav', r_Ex2, Fs_w2);
+
+audiowrite('extractedGaussian_1.wav', g_Ex1, Fs_w1);
+audiowrite('extractedGaussian_2.wav', g_Ex2, Fs_w2);
+
+audiowrite('extractedHighpass_1.wav', h_Ex1, Fs_w1);
+audiowrite('extractedHighpass_2.wav', h_Ex2, Fs_w2);
+
+audiowrite('extractedLowpass_1.wav', l_Ex1, Fs_w1);
+audiowrite('extractedLowpass_2.wav', l_Ex2, Fs_w2);
 
 %% ========== PLOTTING ==========
 
 % FIGURE 1: Cover and watermark signals through watermarking process
 figure
-subplot(4,1,1), 
+subplot(3,2,1), 
 plot(1:len_Cover, Cover),
 title('Cover Signal');
 
-subplot(4,1,2), 
-plot(1:len_WM, Watermark),
-title('Watermark Signal');
-
-subplot(4,1,3), 
+subplot(3,2,2), 
 plot(1:len_WMA, WatermarkedCover),
 title('Watermarked Cover Signal');
 
-subplot(4,1,4), 
-plot(1:len_WM, Extracted),
-title('Extracted Watermark');
+subplot(3,2,3), 
+plot(1:len_WM1, Watermark1),
+title('Watermark Signal 1');
+
+subplot(3,2,4), 
+plot(1:len_WM1, Extracted1),
+title('Extracted Watermark 1');
+
+subplot(3,2,5), 
+plot(1:len_WM2, Watermark2),
+title('Watermark Signal 2');
+
+subplot(3,2,6), 
+plot(1:len_WM2, Extracted2),
+title('Extracted Watermark 2');
 
 % FIGURE 2: Original watermarked signals vs. attacked watermarked signals
 figure
@@ -163,27 +185,31 @@ subplot(5,1,5),
 plot(1:length(lowAttack), lowAttack),
 title('Lowpass Filter Attack');
 
-% FIGURE 3: Original extracted watermark  vs. attacked extracted watermarks
+% FIGURE 3: Attacked extracted watermarks
 figure
-subplot(5,1,1), 
-plot(1:len_WM, Watermark),
-title('Original Extracted Watermark');
+subplot(3,2,1), 
+plot(1:len_WM1, r_Ex1),
+title('Watermark 1 Extracted from Reverb');
 
-subplot(5,1,2), 
-plot(1:len_WM, reverb_Extract),
-title('Extracted from Reverb Attack');
+subplot(3,2,2), 
+plot(1:len_WM2, r_Ex2),
+title('Watermark 2 Extracted from Reverb');
 
-subplot(5,1,3), 
-plot(1:len_WM, gaussian_Extract),
-title('Extracted from Gaussian White Noise attack');
+subplot(3,2,3), 
+plot(1:len_WM1, g_Ex1),
+title('Watermark 1 Extracted from Highpass');
 
-subplot(5,1,4), 
-plot(1:len_WM, highpass_Extract),
-title('Watermark from Highpass Filter Attack');
+subplot(3,2,4), 
+plot(1:len_WM2, g_Ex2),
+title('Watermark 2 Extracted from Highpass');
 
-subplot(5,1,5), 
-plot(1:len_WM, lowpass_Extract),
-title('Watermark from Lowpass Filter Attack');
+subplot(3,2,5), 
+plot(1:len_WM1, l_Ex1),
+title('Watermark 1 Extracted from Lowpass');
+
+subplot(3,2,6), 
+plot(1:len_WM2, l_Ex2),
+title('Watermark 2 Extracted from Lowpass');
 
 %% ========== ERROR COMPUTATION ==========
 
@@ -191,27 +217,30 @@ title('Watermark from Lowpass Filter Attack');
 % - Difference between original cover and the watermarked cover
 % - Correlation between original and extracted watermark
 
-[coverDiff1, coverDiff2, wmDiff] = difference(Cover,Watermark,WatermarkedCover,Extracted);
-fprintf('RMSE of Cover vs Watermarked = %f\n', coverDiff1);
-fprintf('PSNR of Cover vs Watermarked = %f\n', coverDiff2);
-fprintf('NCC of Watermark vs Extract = %f\n\n', wmDiff);
+[coverDiff1, coverDiff2, wmDiff1] = difference(Cover,Watermark1,WatermarkedCover,Extracted1);
+fprintf('RMSE of Cover vs Watermarked   = %f\n', coverDiff1);
+fprintf('PSNR of Cover vs Watermarked   = %f\n', coverDiff2);
+[~, ~, wmDiff2] = difference(Cover,Watermark2,WatermarkedCover,Extracted2);
+fprintf('NCC of Watermarks vs Extracts  = %f    %f\n\n', wmDiff1, wmDiff2);
 
 % Calculating the ff:
 % - PSNR between original watermarked and attacked watermarked audio
 % - Correlation between original and attacked extracted watermark
 
-[RMSE_r, PSNR_r, NC_r] = difference(WatermarkedCover,Extracted,revAttack,reverb_Extract);
-[RMSE_g, PSNR_g, NC_g] = difference(WatermarkedCover,Extracted,gaussianAttack,gaussian_Extract);
-[RMSE_h, PSNR_h, NC_h] = difference(WatermarkedCover,Extracted,highAttack,highpass_Extract);
-[RMSE_l, PSNR_l, NC_l] = difference(WatermarkedCover,Extracted,lowAttack,lowpass_Extract);
+[RMSE_r, PSNR_r, NC_r1] = difference(WatermarkedCover,Watermark1,revAttack,r_Ex1);
+[RMSE_r, PSNR_r, NC_r2] = difference(WatermarkedCover,Watermark1,revAttack,r_Ex1);
+[RMSE_g, PSNR_g, NC_g1] = difference(WatermarkedCover,Watermark1,gaussianAttack,gaussian_Extract);
 
-disp('RMSE between Original and Attacked Watermarked Audio');
+[RMSE_h, PSNR_h, NC_h] = difference(WatermarkedCover,Watermark1,highAttack,highpass_Extract);
+[RMSE_l, PSNR_l, NC_l] = difference(WatermarkedCover,Watermark1,lowAttack,l_Ex1);
+
+disp('RMSE between Original and Attacked Watermarked Audio 1');
 fprintf('Reverb               = %f\n', RMSE_r);
 fprintf('Gaussian white noise = %f\n', RMSE_g);
 fprintf('Highpass filtering   = %f\n', RMSE_h);
 fprintf('Lowpass filtering    = %f\n\n', RMSE_l);
 
-disp('PSNR between Original and Attacked Watermarked Audio');
+disp('PSNR between Original and Attacked Watermarked Audio 1');
 fprintf('Reverb               = %f\n', PSNR_r);
 fprintf('Gaussian white noise = %f\n', PSNR_g);
 fprintf('Highpass filtering   = %f\n', PSNR_h);
