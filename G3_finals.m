@@ -3,11 +3,13 @@
 
 clear; clc;
 
-%% ========== EMBEDDING PROCESS ==========
+%% ========== DATA INITIALIZATION ==========
 
 % Obtain audio data
 [Cover,Fs_c] = audioread('cover.wav');
 [Watermark,Fs_w] = audioread('watermark.wav');
+
+[Watermark1,Fs_w1] = audioread('watermark1.wav');
 
 % Match the length of watermark with cover by padding zeros
 len_Cover = length(Cover);
@@ -15,9 +17,17 @@ len_WM = length(Watermark);
 pad = zeros(len_Cover-len_WM, 1);
 paddedWatermark = [Watermark; pad];
 
+len_WM1 = length(Watermark1);
+pad = zeros(len_Cover-len_WM1, 1);
+paddedWatermark1 = [Watermark1; pad];
+
 % Perform single-level DWT with db4 wavelet
 [Cover_A,Cover_D] = dwt(Cover,'db4');
 [WM_A, WM_D] = dwt(paddedWatermark, 'db4');
+
+[WM_A1, WM_D1] = dwt(paddedWatermark1, 'db4');
+
+%% ========== EMBEDDING PROCESS ==========
 
 % Reshape approx coeffs to be square matrices
 dim = round(sqrt(length(Cover_A)));
@@ -32,9 +42,26 @@ WM_A = WM_A(1:dim^2);
 
 WM_Asq = reshape(WM_A,dim,dim);
 
+
+dim = round(sqrt(length(Cover_D)));
+Cover_D = Cover_D(1:dim^2);
+Cover_A = Cover_A(1:dim^2);
+
+Cover_Dsq = reshape(Cover_D,dim,dim);
+
+dim = round(sqrt(length(WM_D1)));
+WM_D1 = WM_D1(1:dim^2);
+WM_A1 = WM_A1(1:dim^2);
+
+WM_Dsq1 = reshape(WM_D1,dim,dim);
+
 % Perform SVD on the respective coeffs of the two audio data
 [U_CA, S_CA, V_CA] = svd(Cover_Asq);
 [U_WA, S_WA, V_WA] = svd(WM_Asq);
+
+
+[U_CD, S_CD, V_CD] = svd(Cover_Dsq);
+[U_WD1, S_WD1, V_WD1] = svd(WM_Dsq1);
 
 % Embedding watermark to cover via singular values
 S_Watermarked = S_CA + (0.01*S_WA);
@@ -43,8 +70,20 @@ WatermarkedCover_A = U_CA * S_Watermarked * V_CA';
 
 WatermarkedCover_A = reshape(WatermarkedCover_A, dim^2, 1);
 
+% % IDWT to produce final watermarked audio
+% WatermarkedCover = idwt(WatermarkedCover_A,Cover_D,'db4');
+% audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
+
+
+% Embedding watermark to cover via singular values
+S_Watermarked = S_CD + (0.01*S_WD1);
+
+WatermarkedCover_D = U_CD * S_Watermarked * V_CD';
+
+WatermarkedCover_D = reshape(WatermarkedCover_D, dim^2, 1);
+
 % IDWT to produce final watermarked audio
-WatermarkedCover = idwt(WatermarkedCover_A,Cover_D,'db4');
+WatermarkedCover = idwt(WatermarkedCover_A,WatermarkedCover_D,'db4');
 audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 
 %% ========== EXTRACTING PROCESS ==========
@@ -55,6 +94,11 @@ audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
 Extracted = extractWatermark(WatermarkedAudio, S_CA, U_WA, V_WA, WM_D, len_WM);
 
 audiowrite('extracted.wav', Extracted, Fs_w);
+
+
+Extracted1 = extractWatermark(WatermarkedAudio, S_CD, U_WD, V_WD, WM_A1, len_WM1);
+
+audiowrite('extracted1.wav', Extracted1, Fs_w);
 
 %% ========== ATTACKING PROCESS ==========
 
@@ -93,7 +137,7 @@ highpass_Extract = extractWatermark(highAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
 lowpass_Extract = extractWatermark(lowAttack, S_CA, U_WA, V_WA, WM_A, len_WM);
 
 % Adjust amplitudes
-reverb_Extract = reverb_Extract./100;
+reverb_Extract = reverb_Extract./80;
 lowpass_Extract = lowpass_Extract./20;
 
 % Write wav files
