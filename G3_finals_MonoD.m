@@ -30,7 +30,7 @@ dim = round(sqrt(length(WM_A)));
 WM_D = WM_D(1:dim^2);
 WM_A = WM_A(1:dim^2);
 
-WM_Dsq = reshape(WM_A,dim,dim);
+WM_Dsq = reshape(WM_D,dim,dim);
 
 % Perform SVD on the respective coeffs of the two audio data
 [U_CD, S_CD, V_CD] = svd(Cover_Dsq);
