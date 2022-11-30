@@ -116,10 +116,8 @@ audiowrite('lowpass.wav', lowAttack, Fs_wc);
 [h_Ex1,h_Ex2] = extractWatermark(highAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
 [l_Ex1,l_Ex2] = extractWatermark(lowAttack,S_CA,S_CD,U_WA,V_WA,U_WD,V_WD,WM1_D,WM2_A,len_WM1,len_WM2);
 
-% Adjust amplitudes
+% Adjust amplitudes for better audibility
 r_Ex1 = r_Ex1./80;
-r_Ex2 = r_Ex2./80;
-h_Ex2 = h_Ex2./20;
 l_Ex1 = l_Ex1./20;
 
 % Write wav files
