@@ -45,16 +45,16 @@ WatermarkedCover_D = reshape(WatermarkedCover_D, dim^2, 1);
 
 % IDWT to produce final watermarked audio
 WatermarkedCover = idwt(Cover_A,WatermarkedCover_D,'db4');
-audiowrite('watermarked.wav',WatermarkedCover,Fs_c);
+audiowrite('watermarkedD.wav',WatermarkedCover,Fs_c);
 
 %% ========== EXTRACTING PROCESS ==========
 
 % Obtain watermarked audio data
-[WatermarkedAudio, Fs_wc] = audioread('watermarked.wav');
+[WatermarkedAudio, Fs_wc] = audioread('watermarkedD.wav');
 
 Extracted = extractWatermarkD(WatermarkedAudio, S_CD, U_WD, V_WD, WM_A, len_WM);
 
-audiowrite('extracted.wav', Extracted, Fs_w);
+audiowrite('extractedD.wav', Extracted, Fs_w);
 
 %% ========== ATTACKING PROCESS ==========
 
@@ -64,25 +64,25 @@ len_WMA = length(WatermarkedAudio);
 reverb = reverberator('HighCutFrequency',500,'SampleRate',1000);
 revAttack = reverb(WatermarkedAudio);
 revAttack = revAttack(:,1) + revAttack(:,2);
-audiowrite('reverb.wav', revAttack, Fs_wc);
+audiowrite('reverbD.wav', revAttack, Fs_wc);
 
 % Gaussian white noise
 gaussianAttack = awgn(WatermarkedAudio,50,'measured');
-audiowrite('gaussian.wav', gaussianAttack, Fs_wc);
+audiowrite('gaussianD.wav', gaussianAttack, Fs_wc);
 
 %% ========== EXTRACTING FROM ATTACKED ==========
 
 % Obtain attacked watermarked audio data
-[revAttack, ~] = audioread('reverb.wav');
-[gaussianAttack, ~] = audioread('gaussian.wav');
+[revAttack, ~] = audioread('reverbD.wav');
+[gaussianAttack, ~] = audioread('gaussianD.wav');
 
 % Extract watermarks
 reverb_Extract = extractWatermarkD(revAttack, S_CD, U_WD, V_WD, WM_A, len_WM);
 gaussian_Extract = extractWatermarkD(gaussianAttack, S_CD, U_WD, V_WD, WM_A, len_WM);
 
 % Write wav files
-audiowrite('extractedReverb.wav', reverb_Extract, Fs_w);
-audiowrite('extractedGaussian.wav', gaussian_Extract, Fs_w);
+audiowrite('extractedReverbD.wav', reverb_Extract, Fs_w);
+audiowrite('extractedGaussianD.wav', gaussian_Extract, Fs_w);
 
 %% ========== PLOTTING ==========
 
@@ -106,29 +106,29 @@ title('Extracted Watermark');
 
 % FIGURE 2: Original watermarked signals vs. attacked watermarked signals
 figure
-subplot(5,1,1), 
+subplot(3,1,1), 
 plot(1:len_WMA, WatermarkedCover),
 title('Original Watermarked Cover');
 
-subplot(5,1,2), 
+subplot(3,1,2), 
 plot(1:length(revAttack), revAttack),
 title('Reverb Attack');
 
-subplot(5,1,3), 
+subplot(3,1,3), 
 plot(1:length(gaussianAttack), gaussianAttack),
 title('Gaussian White Noise Attack');
 
 % FIGURE 3: Original extracted watermark  vs. attacked extracted watermarks
 figure
-subplot(5,1,1), 
+subplot(3,1,1), 
 plot(1:len_WM, Watermark),
 title('Original Extracted Watermark');
 
-subplot(5,1,2), 
+subplot(3,1,2), 
 plot(1:len_WM, reverb_Extract),
 title('Extracted from Reverb Attack');
 
-subplot(5,1,3), 
+subplot(3,1,3), 
 plot(1:len_WM, gaussian_Extract),
 title('Extracted from Gaussian White Noise attack');
 
