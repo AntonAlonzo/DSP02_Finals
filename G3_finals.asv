@@ -159,12 +159,12 @@ title('Gaussian White Noise Attack');
 % FIGURE 3: Attacked extracted watermarks
 figure
 subplot(3,2,1), 
-plot(1:len_WM1, Watermark1),
+plot(1:len_WM1, r_Ex1),
 title('Original Watermark 1');
 
 subplot(3,2,2), 
-plot(1:len_WM2, Watermark2),
-title('Original Watermark 2');
+plot(1:len_WM1, r_Ex1),
+title('Watermark 1 Extracted from Reverb');
 
 subplot(3,2,3), 
 plot(1:len_WM1, r_Ex1),
